@@ -12,19 +12,22 @@ namespace MultiRenders
 {
     public partial class ToolWindow : Form
     {
+        public event EventHandler<EventArgs> ModeChanged;
+
         public ToolWindow()
         {
             InitializeComponent();
+            radioButtonColorByPosition.Checked = true;
         }
 
         private void radioButtonColorByPosition_CheckedChanged(object sender, EventArgs e)
         {
-
+            OnModeChanged();
         }
 
         private void radioButtonDynamicLightSpecular_CheckedChanged(object sender, EventArgs e)
         {
-
+            OnModeChanged();
         }
 
         private void buttonResetLightPosition_Click(object sender, EventArgs e)
@@ -35,6 +38,18 @@ namespace MultiRenders
         private void radioButtonMoveCubeToSphere_CheckedChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void OnModeChanged()
+        {
+            if (radioButtonColorByPosition.Checked)
+            {
+                ModeChanged?.Invoke(this, EventArgs.Empty);
+            }
+            else if (radioButtonDynamicLightSpecular.Checked)
+            {
+                ModeChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 }
