@@ -7,13 +7,11 @@
 #define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
 
-// Matrix variables
 matrix World;
 matrix View;
 matrix Projection;
 matrix WorldViewProjection;
 
-// Light and Material properties
 float3 LightPosition;
 float4 LightColor;
 float4 AmbientColor;
@@ -21,7 +19,6 @@ float3 CameraPosition;
 float4 SpecularColor;
 float SpecularPower;
 
-// Texture
 Texture2D ShaderTexture;
 sampler TextureSampler = sampler_state
 {

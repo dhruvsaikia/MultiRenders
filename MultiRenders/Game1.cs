@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using static MultiRenders.Models;
 
 namespace MultiRenders
@@ -9,13 +10,13 @@ namespace MultiRenders
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private Models _teapotModel;
-        private Models _teapotModelPart2; // Model for Part 2
-        private Effect _shaderPart2; // Shader for Part 2
-        private MouseState _previousMouseState;
+        private BaseTeapot _currentTeapot; // Base class for teapot
+        private ColorByPositionTeapot _colorByPositionTeapot;
+        private DynamicSpecularLightTeapot _dynamicSpecularLightTeapot;
+        private MoveCubeToSphereTeapot _moveCubeToSphereTeapot;
         private SpriteFont _font;
+        private MouseState _previousMouseState;
         private bool _isFirstUpdate = true;
-        private RenderMode _currentRenderMode = RenderMode.ColorByPosition; // Initial mode is Part 1
 
         public Game1()
         {
@@ -25,30 +26,54 @@ namespace MultiRenders
             _graphics.PreferredBackBufferWidth = 1200;
             _graphics.PreferredBackBufferHeight = 600;
         }
+        private enum RenderMode
+        {
+            ColorByPosition,
+            DynamicSpecularLighting,
+            MoveCubeToSphere // Assume you have this mode as well
+        }
+
+        private RenderMode _currentRenderMode;
 
         protected override void Initialize()
         {
             ToolWindow toolWindow = new ToolWindow();
             toolWindow.Show();
+            toolWindow.ModeChanged += ToolWindow_ModeChanged;
 
             base.Initialize();
+        }
+
+        private void ToolWindow_ModeChanged(object sender, EventArgs e)
+        {
+            ToolWindow toolWindow = sender as ToolWindow;
+
+            if (toolWindow.RadioButtonColorByPositionChecked)
+            {
+                _currentRenderMode = RenderMode.ColorByPosition;
+                _currentTeapot = _colorByPositionTeapot;
+            }
+            else if (toolWindow.RadioButtonDynamicLightSpecularChecked)
+            {
+                _currentRenderMode = RenderMode.DynamicSpecularLighting;
+                _currentTeapot = _dynamicSpecularLightTeapot;
+            }
+            _currentTeapot.WorldMatrix = Matrix.Identity;
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            Model teapot = Content.Load<Model>("Teapot");
-            Texture2D teapotTexture = Content.Load<Texture2D>("Smiley2");
-            Effect shaderPart1 = Content.Load<Effect>("MyShader"); // Shader for Part 1
-            _shaderPart2 = Content.Load<Effect>("MyShader2"); // Shader for Part 2
             _font = Content.Load<SpriteFont>("Arial12");
 
-            _teapotModel = new Models(teapot, teapotTexture, Vector3.Zero, 1);
-            _teapotModel.SetShaderPart1(shaderPart1);
-
-            // Create the Teapot model for Part 2
-            _teapotModelPart2 = new Models(teapot, teapotTexture, new Vector3(2, 0, 0), 1); // Adjust the position as needed
-            _teapotModelPart2.SetShaderPart2(_shaderPart2);
+            Model teapotModel = Content.Load<Model>("Teapot");
+            Texture2D teapotTexture = Content.Load<Texture2D>("Smiley2");
+            Texture2D metalTexture = Content.Load<Texture2D>("Metal");
+            Effect shaderPart1 = Content.Load<Effect>("MyShader"); 
+            Effect shaderPart2 = Content.Load<Effect>("MyShader2");
+            _colorByPositionTeapot = new ColorByPositionTeapot(teapotModel, teapotTexture, shaderPart1);
+            _dynamicSpecularLightTeapot = new DynamicSpecularLightTeapot(teapotModel, metalTexture, shaderPart2);
+            _currentTeapot = _colorByPositionTeapot;
 
             _previousMouseState = Mouse.GetState();
         }
@@ -64,35 +89,16 @@ namespace MultiRenders
                 return;
             }
 
-            if (currentMouseState != _previousMouseState)
+            if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
             {
-                Vector3 positionChange = new Vector3(
-                    (currentMouseState.X - _previousMouseState.X) * 0.01f,
-                    -(currentMouseState.Y - _previousMouseState.Y) * 0.01f,
-                    (currentMouseState.ScrollWheelValue - _previousMouseState.ScrollWheelValue) * 0.01f
-                );
-
-                if (_currentRenderMode == RenderMode.ColorByPosition)
-                {
-                    _teapotModel.SetPosition(_teapotModel.Translation.Translation + positionChange);
-                }
-                else if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
-                {
-                    _teapotModelPart2.SetPosition(_teapotModelPart2.Translation.Translation + positionChange);
-                }
-
-                _previousMouseState = currentMouseState;
+                // Pass mouse state to update light position
+                _dynamicSpecularLightTeapot.UpdateLightPosition(currentMouseState, _previousMouseState);
             }
 
-            // Check for mode switch (you can use any logic to switch modes)
-            if (Keyboard.GetState().IsKeyDown(Keys.D1))
-            {
-                _currentRenderMode = RenderMode.ColorByPosition;
-            }
-            else if (Keyboard.GetState().IsKeyDown(Keys.D2))
-            {
-                _currentRenderMode = RenderMode.DynamicSpecularLighting;
-            }
+            // Update the teapot normally, without light position logic
+            _currentTeapot.Update(gameTime, currentMouseState, _previousMouseState);
+
+            _previousMouseState = currentMouseState;
 
             base.Update(gameTime);
         }
@@ -101,23 +107,22 @@ namespace MultiRenders
         {
             GraphicsDevice.Clear(Color.Black);
 
-            Vector3 cameraPosition = new Vector3(0, 0, 3);
+            Vector3 cameraPosition = new Vector3(0, 0, 1);
             Vector3 cameraTarget = Vector3.Zero;
             Matrix view = Matrix.CreateLookAt(cameraPosition, cameraTarget, Vector3.Up);
             Matrix projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), _graphics.GraphicsDevice.Viewport.AspectRatio, 0.1f, 100f);
 
-            if (_currentRenderMode == RenderMode.ColorByPosition)
-            {
-                _teapotModel.Render(view, projection, cameraPosition, _currentRenderMode);
-            }
-            else if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
-            {
-                _teapotModelPart2.Render(view, projection, cameraPosition, _currentRenderMode);
-            }
+            _currentTeapot.Draw(GraphicsDevice, view, projection);
+
+            Vector3 teapotPosition = _currentTeapot.WorldMatrix.Translation;
+            string positionText = $"Teapot Position: X:{teapotPosition.X:F2}, Y:{teapotPosition.Y:F2}, Z:{teapotPosition.Z:F2}";
 
             _spriteBatch.Begin();
-            _spriteBatch.DrawString(_font, $"Teapot Position: {_currentRenderMode}", new Vector2(10, 10), Color.White); // Display the current mode
+            _spriteBatch.DrawString(_font, positionText, new Vector2(10, 10), Color.White);
             _spriteBatch.End();
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;                 
+            GraphicsDevice.BlendState = BlendState.Opaque;                 
+            GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
             base.Draw(gameTime);
         }

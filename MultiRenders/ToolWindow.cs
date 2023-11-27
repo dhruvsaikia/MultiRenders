@@ -13,6 +13,8 @@ namespace MultiRenders
     public partial class ToolWindow : Form
     {
         public event EventHandler<EventArgs> ModeChanged;
+        public bool RadioButtonColorByPositionChecked => radioButtonColorByPosition.Checked;
+        public bool RadioButtonDynamicLightSpecularChecked => radioButtonDynamicLightSpecular.Checked;
 
         public ToolWindow()
         {
@@ -50,6 +52,7 @@ namespace MultiRenders
             {
                 ModeChanged?.Invoke(this, EventArgs.Empty);
             }
+            // Add logic for other radio buttons if needed
         }
     }
 }

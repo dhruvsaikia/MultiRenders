@@ -4,10 +4,11 @@
     {
         private System.ComponentModel.IContainer components = null;
 
-        private System.Windows.Forms.RadioButton radioButtonColorByPosition;
-        private System.Windows.Forms.RadioButton radioButtonDynamicLightSpecular;
-        private System.Windows.Forms.RadioButton radioButtonMoveCubeToSphere;
-        private System.Windows.Forms.Button buttonResetLightPosition;
+        public System.Windows.Forms.RadioButton radioButtonColorByPosition;
+        public System.Windows.Forms.RadioButton radioButtonDynamicLightSpecular;
+        public System.Windows.Forms.RadioButton radioButtonMoveCubeToSphere;
+        public System.Windows.Forms.Button buttonResetLightPosition;
+
 
         protected override void Dispose(bool disposing)
         {
