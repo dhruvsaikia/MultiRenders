@@ -63,6 +63,12 @@
 /processorParam:DebugMode=Auto
 /build:MyShader2.fx
 
+#begin MyShader3.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:MyShader3.fx
+
 #begin Smiley2.jpg
 /importer:TextureImporter
 /processor:TextureProcessor

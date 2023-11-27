@@ -10,7 +10,7 @@ namespace MultiRenders
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private BaseTeapot _currentTeapot; // Base class for teapot
+        private BaseTeapot _currentTeapot;
         private ColorByPositionTeapot _colorByPositionTeapot;
         private DynamicSpecularLightTeapot _dynamicSpecularLightTeapot;
         private MoveCubeToSphereTeapot _moveCubeToSphereTeapot;
@@ -30,7 +30,7 @@ namespace MultiRenders
         {
             ColorByPosition,
             DynamicSpecularLighting,
-            MoveCubeToSphere // Assume you have this mode as well
+            MoveCubeToSphere 
         }
 
         private RenderMode _currentRenderMode;
@@ -40,8 +40,17 @@ namespace MultiRenders
             ToolWindow toolWindow = new ToolWindow();
             toolWindow.Show();
             toolWindow.ModeChanged += ToolWindow_ModeChanged;
+            toolWindow.ResetLightPositionClicked += ToolWindow_ResetLightPositionClicked; 
 
             base.Initialize();
+        }
+
+        private void ToolWindow_ResetLightPositionClicked(object sender, EventArgs e)
+        {
+            if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
+            {
+                _dynamicSpecularLightTeapot.ResetLightPosition();
+            }
         }
 
         private void ToolWindow_ModeChanged(object sender, EventArgs e)
@@ -58,6 +67,12 @@ namespace MultiRenders
                 _currentRenderMode = RenderMode.DynamicSpecularLighting;
                 _currentTeapot = _dynamicSpecularLightTeapot;
             }
+            else if (toolWindow.RadioButtonMoveCubeToSphereChecked) 
+            {
+                _currentRenderMode = RenderMode.MoveCubeToSphere;
+                _currentTeapot = _moveCubeToSphereTeapot;
+            }
+
             _currentTeapot.WorldMatrix = Matrix.Identity;
         }
 
@@ -71,8 +86,12 @@ namespace MultiRenders
             Texture2D metalTexture = Content.Load<Texture2D>("Metal");
             Effect shaderPart1 = Content.Load<Effect>("MyShader"); 
             Effect shaderPart2 = Content.Load<Effect>("MyShader2");
+            Effect shaderPart3 = Content.Load<Effect>("MyShader3");
+            Model cubeModel = Content.Load<Model>("Cube"); 
+            Model sphereModel = Content.Load<Model>("Sphere");
             _colorByPositionTeapot = new ColorByPositionTeapot(teapotModel, teapotTexture, shaderPart1);
             _dynamicSpecularLightTeapot = new DynamicSpecularLightTeapot(teapotModel, metalTexture, shaderPart2);
+            _moveCubeToSphereTeapot = new MoveCubeToSphereTeapot(cubeModel, sphereModel, teapotTexture, metalTexture, shaderPart3);
             _currentTeapot = _colorByPositionTeapot;
 
             _previousMouseState = Mouse.GetState();
@@ -91,11 +110,15 @@ namespace MultiRenders
 
             if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
             {
-                // Pass mouse state to update light position
                 _dynamicSpecularLightTeapot.UpdateLightPosition(currentMouseState, _previousMouseState);
             }
 
-            // Update the teapot normally, without light position logic
+            if (_currentRenderMode == RenderMode.MoveCubeToSphere)
+            {
+                Vector3 cameraPosition = new Vector3(0, 0, 1);  
+                _moveCubeToSphereTeapot.SetCameraPosition(cameraPosition);
+            }
+
             _currentTeapot.Update(gameTime, currentMouseState, _previousMouseState);
 
             _previousMouseState = currentMouseState;
@@ -114,14 +137,28 @@ namespace MultiRenders
 
             _currentTeapot.Draw(GraphicsDevice, view, projection);
 
-            Vector3 teapotPosition = _currentTeapot.WorldMatrix.Translation;
-            string positionText = $"Teapot Position: X:{teapotPosition.X:F2}, Y:{teapotPosition.Y:F2}, Z:{teapotPosition.Z:F2}";
+            string positionText;
+            if (_currentRenderMode == RenderMode.ColorByPosition)
+            {
+                Vector3 teapotPosition = _currentTeapot.WorldMatrix.Translation;
+                positionText = $"Teapot Position: X:{teapotPosition.X:F2}, Y:{teapotPosition.Y:F2}, Z:{teapotPosition.Z:F2}";
+            }
+            else if (_currentRenderMode == RenderMode.DynamicSpecularLighting)
+            {
+                Vector3 lightPosition = _dynamicSpecularLightTeapot.GetLightPosition(); // Method to get light position
+                positionText = $"Light Position: X:{lightPosition.X:F2}, Y:{lightPosition.Y:F2}, Z:{lightPosition.Z:F2}";
+            }
+            else
+            {
+                positionText = "";
+            }
 
             _spriteBatch.Begin();
             _spriteBatch.DrawString(_font, positionText, new Vector2(10, 10), Color.White);
             _spriteBatch.End();
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;                 
-            GraphicsDevice.BlendState = BlendState.Opaque;                 
+
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GraphicsDevice.BlendState = BlendState.Opaque;
             GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
             base.Draw(gameTime);

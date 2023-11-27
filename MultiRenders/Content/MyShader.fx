@@ -60,7 +60,7 @@ float4 MainPS(VertexShaderOutput input) : SV_Target
     float3 worldPosition = input.WorldPosition;
     float3 basecolor = tex2D(BasicTextureSampler, input.UV).rgb;
     
-    //Tint base on World position
+
     float3 tint = float3(worldPosition.x, worldPosition.y, worldPosition.z);
     tint = 0.5f + 0.5f * normalize(tint);
     

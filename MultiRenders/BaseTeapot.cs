@@ -11,6 +11,8 @@ namespace MultiRenders
         protected Texture2D Texture;
         protected Effect Shader;
         public Matrix WorldMatrix;
+        private Vector3 _cameraPosition;
+
 
         public BaseTeapot(Model mesh, Texture2D texture, Effect shader)
         {
@@ -19,6 +21,11 @@ namespace MultiRenders
             Shader = shader;
             WorldMatrix = Matrix.Identity;
         }
+        public void SetCameraPosition(Vector3 cameraPosition)
+        {
+            _cameraPosition = cameraPosition;
+        }
+
 
         protected abstract void SetShaderParameters(Matrix viewMatrix, Matrix projectionMatrix);
 
@@ -34,7 +41,7 @@ namespace MultiRenders
             if (Texture == null)
                 throw new InvalidOperationException("Texture has not been set for the teapot.");
 
-            SetShaderParameters(viewMatrix, projectionMatrix);  // Subclass will handle specific parameters
+            SetShaderParameters(viewMatrix, projectionMatrix);  
 
             Matrix worldViewProjection = WorldMatrix * viewMatrix * projectionMatrix;
 
